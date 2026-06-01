@@ -18,6 +18,8 @@ AlgeoMath Kids 3D (https://www.algeomath.kr/kids/algeomath/poly/make) 에 쌓기
 
 1. 사용자의 자연어 요청을 파악합니다
 2. 아래 Python 스크립트를 사용합니다:
+   - 자동 주입용 임시 Python 스크립트는 cmd/콘솔 창이 보이지 않도록 `pythonw.exe` 또는 `Start-Process -WindowStyle Hidden`으로 실행합니다.
+   - AlgeoMath 3D 브라우저 창은 사용자가 확인할 수 있게 띄웁니다.
 
 **터미널 CLI (대화형):**
 ```

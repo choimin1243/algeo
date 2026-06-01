@@ -9,6 +9,12 @@ Claude Code에서 AlgeoMath Kids 수학 도구를 직접 제어하는 스킬 모
 | `/stackblocks` | `stackblocks.md` | AlgeoMath Kids 3D — 쌓기나무 블록 쌓기 |
 | `/algeo2d` | `algeo2d.md` | AlgeoMath Kids 2D — 도형 추가 |
 
+## 작업 규칙
+
+- 쌓기나무, 큐브, 블록, 층, 입체 구조는 `/stackblocks`로 3D에서 만듭니다.
+- 원, 삼각형, 사각형, 다각형, 선분, 점 등 쌓기나무가 아닌 나머지 도형은 `/algeo2d`로 2D에서 만듭니다.
+- 자동 주입용 Python 스크립트는 Windows에서 cmd/콘솔 창이 보이지 않도록 `pythonw.exe` 또는 `Start-Process -WindowStyle Hidden`으로 실행합니다. AlgeoMath 브라우저 창은 사용자가 확인할 수 있게 유지합니다.
+
 ## 설치 방법
 
 1. 이 저장소를 클론합니다:
@@ -62,6 +68,7 @@ AlgeoMath Kids 2D (https://www.algeomath.kr/kids/algeomath/app/make) 에 직접 
 ```
 algebra/
 ├── README.md
+├── skills.md          ← 2D/3D 라우팅 및 실행 규칙
 ├── stackblocks.md     ← /stackblocks 스킬 정의
 ├── algeo2d.md         ← /algeo2d 스킬 정의
 └── scripts/
