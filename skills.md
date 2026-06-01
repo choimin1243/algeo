@@ -20,6 +20,8 @@ AlgeoMath 작업을 할 때는 먼저 만들 대상이 3D 쌓기나무인지, 2D
 ## Execution
 
 - AlgeoMath 브라우저 창은 사용자가 확인할 수 있게 띄운다.
+- 쌓기나무 브라우저 주입은 `C:\Users\choi2\.claude\scripts\stackblocks_harness.py`를 우선 사용한다.
+- 매번 새 주입 코드를 만들지 말고, 앞쪽 기준 `--height-map '[[x,y,h], ...]'`를 전달한다.
 - Windows에서 보조 Python 스크립트를 실행할 때는 cmd/콘솔 창이 보이지 않도록 `pythonw.exe` 또는 `Start-Process -WindowStyle Hidden`을 사용한다.
 - 자동 주입용 임시 스크립트는 `%TEMP%`에 만들고, 필요한 로그는 파일로 남긴다.
 - 이전 요청에서 실행 중인 AlgeoMath 임시 Python 프로세스가 있으면 새 작업 전에 정리한다.

@@ -34,6 +34,7 @@ copy algeo2d.md "$env:USERPROFILE\.claude\commands\algeo2d.md"
 3. Python 스크립트를 scripts 폴더에 복사합니다:
 ```powershell
 copy scripts\stackblocks.py "$env:USERPROFILE\.claude\scripts\stackblocks.py"
+copy scripts\stackblocks_harness.py "$env:USERPROFILE\.claude\scripts\stackblocks_harness.py"
 copy scripts\algeo2d.py "$env:USERPROFILE\.claude\scripts\algeo2d.py"
 ```
 
@@ -75,6 +76,7 @@ algebra/
 ├── algeo2d.md         ← /algeo2d 스킬 정의
 └── scripts/
     ├── stackblocks.py ← 쌓기나무 터미널 CLI + 브라우저 주입 모듈
+    ├── stackblocks_harness.py ← 앞쪽 기준 height map 주입 하네스
     └── algeo2d.py     ← 2D 도형 터미널 CLI + 브라우저 주입 모듈
 ```
 

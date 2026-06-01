@@ -24,6 +24,8 @@ AlgeoMath Kids 3D (https://www.algeomath.kr/kids/algeomath/poly/make) 에 쌓기
    - 떠 있는 블록이 없도록 모든 높은 칸은 아래층부터 채웁니다.
    - 방향이 애매하면 생성 전에 어느 쪽을 정면/왼쪽/오른쪽/뒤로 볼지 사용자에게 짧게 확인합니다.
 3. 아래 Python 스크립트를 사용합니다:
+   - 브라우저 주입은 가능하면 `C:\Users\choi2\.claude\scripts\stackblocks_harness.py`를 사용합니다.
+   - 매번 새 주입 코드를 만들지 말고, `--height-map`에 앞쪽 기준 height map을 넣어 실행합니다.
    - 자동 주입용 임시 Python 스크립트는 cmd/콘솔 창이 보이지 않도록 `pythonw.exe` 또는 `Start-Process -WindowStyle Hidden`으로 실행합니다.
    - AlgeoMath 3D 브라우저 창은 사용자가 확인할 수 있게 띄웁니다.
 
@@ -70,41 +72,14 @@ PYTHONUTF8=1 python "C:\Users\choi2\.claude\scripts\stackblocks.py"
 ### 방식 2 — AlgeoMath 3D 브라우저 직접 주입
 Playwright로 브라우저를 열고 블록을 사이트에 직접 반영합니다.
 
-아래 Python 코드 패턴을 사용합니다:
+앞쪽 기준 height map을 만든 뒤 하네스를 사용합니다.
 
-```python
-import sys, json, time
-sys.path.insert(0, r'C:\Users\choi2')
-from playwright.sync_api import sync_playwright
-
-layout = [
-    # (col, row, layer) — 0-indexed
-    (0,0,1),(1,0,1),(2,0,1),   # 예시: 1층 3개
-    (0,0,2),(1,0,2),            # 예시: 2층 2개
-    (0,0,3),                    # 예시: 3층 1개
-]
-COLORS = {1:0x81C784, 2:0xFF8F00, 3:0xE53935}  # 층별 색상
-
-p = sync_playwright().start()
-browser = p.chromium.launch(headless=False, args=['--start-maximized'])
-page = browser.new_page()
-page.set_viewport_size({'width':1400,'height':900})
-page.goto('https://www.algeomath.kr/kids/algeomath/poly/make')
-time.sleep(5)
-frame = page.frames[1]
-base = json.loads(frame.evaluate('() => JSON.stringify(window.AlgeomathPoly.api.save())'))
-base['scene']['objectDatas'] = [
-    {'id':100+i,'typeName':'STACK_CUBE','name':'stackCube',
-     'is2DObject':False,'color':COLORS.get(layer,0xFFFFFF),
-     'measurementType':None,'visible':True,
-     'position':{'x':col+0.5,'y':-(row+0.5),'z':layer-0.5},
-     'rotation':{'_x':0,'_y':0,'_z':0,'_order':'XYZ'},
-     'scale':{'x':1,'y':1,'z':1}}
-    for i,(col,row,layer) in enumerate(layout)
-]
-frame.evaluate('(d) => window.AlgeomathPoly.api.load(d)', base)
-time.sleep(1)
-browser.close(); p.stop()
+```powershell
+$env:PYTHONUTF8 = "1"
+pythonw "C:\Users\choi2\.claude\scripts\stackblocks_harness.py" `
+  --height-map '[[1,0,1],[3,0,1],[1,1,2],[2,1,3],[3,1,2]]' `
+  --screenshot "$env:TEMP\algeomath_stack.png" `
+  --log "$env:TEMP\algeomath_stack.log"
 ```
 
 ---
@@ -134,6 +109,13 @@ browser.close(); p.stop()
 3. 다섯 방향의 모양이 자연스럽게 이어지도록 바닥 배치와 각 칸의 높이를 찾습니다.
 4. 각 바닥 칸 위에 몇 층까지 올라가는지 height map을 만듭니다.
 5. AlgeoMath 좌표로 변환해 생성합니다.
+
+하네스 좌표 기준:
+
+- `x`: 사용자가 보는 그림의 왼쪽에서 오른쪽
+- `y`: 사용자가 보는 그림의 앞쪽에서 뒤쪽, `y=0`이 가장 앞
+- `h`: 해당 칸의 높이
+- `--height-map`: `[[x,y,h], ...]`
 
 예: 그림이 `3층(1개), 2층(3개), 1층(5개)`를 보이면 이것은 층별 개수일 뿐입니다. 먼저 위/정면/왼쪽/오른쪽/뒤에서 어떻게 보일지 생각하고, 그 방향성이 살아 있는 배치를 생성합니다. 단순 직선 `1,2,3,2,1`처럼 층별 개수만 맞춘 배치는 이미지 모양과 방향이 다르면 사용하지 않습니다.
 
