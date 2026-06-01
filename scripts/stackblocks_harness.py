@@ -180,7 +180,11 @@ def inject(height_map, screenshot=None, log_path=None, keep_open=True):
 
 def main():
     parser = argparse.ArgumentParser(description="Inject AlgeoMath Kids 3D stackblocks.")
-    parser.add_argument("--height-map", required=True, help='JSON: [[x,y,h], ...] or {"x,y": h}')
+    parser.add_argument(
+        "--height-map",
+        required=True,
+        help='JSON: [[x,y,h], ...] or {"x,y": h}; y=0 is the viewer-facing front row',
+    )
     parser.add_argument("--screenshot", help="Optional screenshot path.")
     parser.add_argument("--log", help="Optional log path.")
     parser.add_argument("--close", action="store_true", help="Close browser after injection.")
