@@ -15,6 +15,7 @@ Route AlgeoMath Kids work while keeping the default context small.
 
 ## Stack-Block Core
 
+- **Always reset the site before injecting.** Pass `--reset` first or call `window.AlgeomathPoly.api.load` with an empty scene before placing any blocks. Never add blocks on top of existing ones.
 - Always determine `left/right/front/back/up` before creating coordinates.
 - Author coordinates are `x` left to right, `y` front to back, `z` upward.
 - Layer counts are validation only.

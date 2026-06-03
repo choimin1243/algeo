@@ -21,7 +21,11 @@ This skill controls AlgeoMath Kids directly in the browser using Playwright.
 
 For image input: identify front/back/left/right/up first, then build height map.
 
-### Step 2 — Inject blocks (choose one)
+### Step 2 — Reset the site first (mandatory)
+
+Before injecting any blocks, always reset the AlgeoMath scene to clear existing blocks. The harness does this automatically — never skip this step or add blocks on top of an existing scene.
+
+### Step 3 — Inject blocks (choose one)
 
 Explicit block list (most accurate):
 ```powershell
@@ -47,7 +51,7 @@ python "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harnes
   --blocks '[[x,y,z], ...]' --print-coordinates
 ```
 
-### Step 3 — Verify
+### Step 4 — Verify
 
 After injection, check the log for `blocks`, `views`, `screenshot` entries.
 
