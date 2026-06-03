@@ -27,6 +27,19 @@ Before injecting any blocks, always reset the AlgeoMath scene to clear existing 
 
 ### Step 3 — Inject blocks (choose one)
 
+**Multiple cases (경우의 수):** When there are several valid arrangements, always place all cases at once using `--cases`. Each case gets a distinct color automatically and is laid out side by side in the x direction.
+
+```powershell
+$env:PYTHONUTF8 = "1"
+pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+  --cases '[ [[x,y,h],...], [[x,y,h],...], [[x,y,h],...] ]' `
+  --gap 2 `
+  --screenshot "$env:TEMP\algeomath_stack.png" `
+  --log "$env:TEMP\algeomath_stack.log"
+```
+
+`--gap` controls the empty-block gap between cases (default: 2).
+
 Explicit block list (most accurate):
 ```powershell
 $env:PYTHONUTF8 = "1"

@@ -24,6 +24,15 @@ from playwright.sync_api import sync_playwright
 
 DEFAULT_COLORS = {1: 0xD89A52, 2: 0xD8893C, 3: 0xC9792F, 4: 0xB96828, 5: 0xA95A20}
 
+CASE_COLORS = [
+    {1: 0xD89A52, 2: 0xC9792F, 3: 0xA95A20, 4: 0x8B4513, 5: 0x6B3410},  # orange
+    {1: 0x64B5F6, 2: 0x2196F3, 3: 0x1565C0, 4: 0x0D47A1, 5: 0x0A3070},  # blue
+    {1: 0x81C784, 2: 0x4CAF50, 3: 0x2E7D32, 4: 0x1B5E20, 5: 0x134018},  # green
+    {1: 0xCE93D8, 2: 0xAB47BC, 3: 0x6A1B9A, 4: 0x4A148C, 5: 0x380F6A},  # purple
+    {1: 0xFFCC80, 2: 0xFFA726, 3: 0xE65100, 4: 0xBF360C, 5: 0x8D2608},  # amber
+    {1: 0x80DEEA, 2: 0x00BCD4, 3: 0x006064, 4: 0x004D50, 5: 0x003538},  # cyan
+]
+
 PRESETS = {
     # Matches the common reference image: a front-facing 1-2-3-2-1 pyramid.
     # Author-space coordinates:
@@ -56,6 +65,61 @@ PRESETS = {
         (0, 2): 1,
     },
 }
+
+
+def parse_cases(raw):
+    """Parse JSON array of height maps: [ [[x,y,h],...], [[x,y,h],...] ]."""
+    data = json.loads(raw)
+    if not isinstance(data, list):
+        raise ValueError("--cases must be a JSON array of height maps")
+    return [parse_height_map(json.dumps(case)) for case in data]
+
+
+def layout_cases(cases_height_maps, gap=2):
+    """Offset multiple cases side by side in x. Returns (combined_blocks, block_color_map)."""
+    combined_blocks = []
+    block_colors = {}
+    x_offset = 0
+
+    for case_idx, hm in enumerate(cases_height_maps):
+        norm_hm = normalize_height_map(hm)
+        blocks = columns_to_blocks(norm_hm)
+        if not blocks:
+            continue
+        case_max_x = max(x for x, _, _ in blocks)
+        colors = CASE_COLORS[case_idx % len(CASE_COLORS)]
+        for x, y, z in blocks:
+            shifted = (x + x_offset, y, z)
+            combined_blocks.append(shifted)
+            block_colors[shifted] = colors.get(z, colors[max(colors)])
+        x_offset += case_max_x + 1 + gap
+
+    return combined_blocks, block_colors
+
+
+def build_objects_for_cases(cases_height_maps, gap=2):
+    """Build AlgeoMath objects for all cases laid out side by side in x."""
+    combined_blocks, block_colors = layout_cases(cases_height_maps, gap=gap)
+    if not combined_blocks:
+        return []
+    max_y = max(y for _, y, _ in combined_blocks)
+    objects = []
+    for i, (x, y, z) in enumerate(sorted(combined_blocks)):
+        col, row, layer = to_algeomath_grid((x, y, z), max_y)
+        color = block_colors.get((x, y, z), DEFAULT_COLORS.get(z, 0xFFFFFF))
+        objects.append({
+            "id": 100 + i,
+            "typeName": "STACK_CUBE",
+            "name": "stackCube",
+            "is2DObject": False,
+            "color": color,
+            "measurementType": None,
+            "visible": True,
+            "position": {"x": col + 0.5, "y": -(row + 0.5), "z": layer - 0.5},
+            "rotation": {"_x": 0, "_y": 0, "_z": 0, "_order": "XYZ"},
+            "scale": {"x": 1, "y": 1, "z": 1},
+        })
+    return objects
 
 
 def parse_height_map(raw):
@@ -260,7 +324,7 @@ def find_poly_frame(page):
     raise RuntimeError("AlgeomathPoly API frame not found")
 
 
-def inject(height_map=None, blocks=None, screenshot=None, log_path=None, keep_open=True):
+def inject(height_map=None, blocks=None, cases=None, gap=2, screenshot=None, log_path=None, keep_open=True):
     log_file = Path(log_path) if log_path else None
 
     def log(message):
@@ -271,15 +335,21 @@ def inject(height_map=None, blocks=None, screenshot=None, log_path=None, keep_op
         else:
             print(message)
 
-    if blocks is not None:
+    if cases is not None:
+        objects = build_objects_for_cases(cases, gap=gap)
+        log_detail = f"cases={len(cases)} gap={gap}"
+    elif blocks is not None:
         blocks = normalize_blocks(blocks)
         height_map = blocks_to_height_map(blocks)
-        coordinates = describe_block_coordinates(blocks)
+        objects = build_objects_from_blocks(blocks)
+        log_detail = f"height_map={height_map} views={describe_views(height_map)}"
+        log_detail += f" coordinates={json.dumps(describe_block_coordinates(blocks), ensure_ascii=False)}"
     else:
         height_map = normalize_height_map(height_map or {})
         blocks = columns_to_blocks(height_map)
-        coordinates = describe_coordinates(height_map)
-    views = describe_views(height_map)
+        objects = build_objects_from_blocks(blocks)
+        log_detail = f"height_map={height_map} views={describe_views(height_map)}"
+        log_detail += f" coordinates={json.dumps(describe_coordinates(height_map), ensure_ascii=False)}"
 
     p = sync_playwright().start()
     browser = p.chromium.launch(headless=False, args=["--start-maximized"])
@@ -294,7 +364,7 @@ def inject(height_map=None, blocks=None, screenshot=None, log_path=None, keep_op
         time.sleep(6)
         frame = find_poly_frame(page)
         base = json.loads(frame.evaluate("() => JSON.stringify(window.AlgeomathPoly.api.save())"))
-        base["scene"]["objectDatas"] = build_objects_from_blocks(blocks)
+        base["scene"]["objectDatas"] = objects
         frame.evaluate("(d) => window.AlgeomathPoly.api.load(d)", base)
         time.sleep(1)
 
@@ -303,9 +373,7 @@ def inject(height_map=None, blocks=None, screenshot=None, log_path=None, keep_op
             page.screenshot(path=screenshot, full_page=True)
 
         log("status=ready")
-        log(f"height_map={height_map}")
-        log(f"views={views}")
-        log(f"coordinates={json.dumps(coordinates, ensure_ascii=False)}")
+        log(log_detail)
         if screenshot:
             log(f"screenshot={screenshot}")
 
@@ -334,6 +402,17 @@ def main():
         required=False,
         help="JSON: explicit author-space blocks [[x,y,z], ...]. Bypasses height-map expansion.",
     )
+    parser.add_argument(
+        "--cases",
+        required=False,
+        help="JSON array of height maps: [ [[x,y,h],...], [[x,y,h],...] ]. Places all cases side by side.",
+    )
+    parser.add_argument(
+        "--gap",
+        type=int,
+        default=2,
+        help="Block gap between cases when using --cases (default: 2).",
+    )
     parser.add_argument("--screenshot", help="Optional screenshot path.")
     parser.add_argument("--log", help="Optional log path.")
     parser.add_argument("--close", action="store_true", help="Close browser after injection.")
@@ -345,6 +424,22 @@ def main():
     args = parser.parse_args()
 
     try:
+        if args.cases:
+            cases = parse_cases(args.cases)
+            if args.print_coordinates:
+                combined, _ = layout_cases(cases, gap=args.gap)
+                print(json.dumps(
+                    [{"author_xyz": list(b), "algeomath_position": {
+                        "x": to_algeomath_grid(b, max(y for _, y, _ in combined))[0] + 0.5,
+                        "y": -(to_algeomath_grid(b, max(y for _, y, _ in combined))[1] + 0.5),
+                        "z": b[2] - 0.5,
+                    }} for b in sorted(combined)],
+                    ensure_ascii=False, indent=2
+                ))
+                return
+            inject(cases=cases, gap=args.gap, screenshot=args.screenshot, log_path=args.log, keep_open=not args.close)
+            return
+
         raw_blocks = None
         if args.blocks:
             raw_blocks = parse_blocks(args.blocks)
@@ -353,7 +448,7 @@ def main():
         elif args.height_map:
             raw_height_map = parse_height_map(args.height_map)
         else:
-            parser.error("provide --blocks, --height-map, or --preset")
+            parser.error("provide --blocks, --height-map, --cases, or --preset")
 
         if raw_blocks is not None:
             blocks = normalize_blocks(raw_blocks)
