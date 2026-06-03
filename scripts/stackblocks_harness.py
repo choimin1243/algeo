@@ -75,7 +75,7 @@ def parse_cases(raw):
     return [parse_height_map(json.dumps(case)) for case in data]
 
 
-def layout_cases(cases_height_maps, gap=2):
+def layout_cases(cases_height_maps, gap=3):
     """Offset multiple cases side by side in x. Returns (combined_blocks, block_color_map)."""
     combined_blocks = []
     block_colors = {}
@@ -97,7 +97,7 @@ def layout_cases(cases_height_maps, gap=2):
     return combined_blocks, block_colors
 
 
-def build_objects_for_cases(cases_height_maps, gap=2):
+def build_objects_for_cases(cases_height_maps, gap=3):
     """Build AlgeoMath objects for all cases laid out side by side in x."""
     combined_blocks, block_colors = layout_cases(cases_height_maps, gap=gap)
     if not combined_blocks:
@@ -324,7 +324,7 @@ def find_poly_frame(page):
     raise RuntimeError("AlgeomathPoly API frame not found")
 
 
-def inject(height_map=None, blocks=None, cases=None, gap=2, screenshot=None, log_path=None, keep_open=True):
+def inject(height_map=None, blocks=None, cases=None, gap=3, screenshot=None, log_path=None, keep_open=True):
     log_file = Path(log_path) if log_path else None
 
     def log(message):
@@ -410,8 +410,8 @@ def main():
     parser.add_argument(
         "--gap",
         type=int,
-        default=2,
-        help="Block gap between cases when using --cases (default: 2).",
+        default=3,
+        help="Block gap between cases when using --cases (default: 3).",
     )
     parser.add_argument("--screenshot", help="Optional screenshot path.")
     parser.add_argument("--log", help="Optional log path.")

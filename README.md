@@ -80,8 +80,30 @@ algebra/
     └── algeo2d.py     ← 2D 도형 터미널 CLI + 브라우저 주입 모듈
 ```
 
+## 경우의 수 배치
+
+경우의 수가 여러 가지일 때는 `--cases`로 모든 배열을 한 번에 배치합니다. 각 케이스는 자동으로 구분 색상이 지정되고, 서로 충분히 떨어져 나란히 배치됩니다.
+
+```powershell
+pythonw "...\stackblocks_harness.py" `
+  --cases '[ [[0,0,2],[1,0,1]], [[0,0,1],[1,0,2]], [[0,0,1],[0,1,1]] ]' `
+  --gap 3
+```
+
+- `--gap N`: 케이스 사이 빈 칸 수 (기본값 3)
+- 케이스 순서대로 주황 → 파랑 → 초록 → 보라 → 황색 → 청록 색상 적용
+
 ## 요구사항
 
 - Python 3.8+
 - playwright (`pip install playwright && playwright install chromium`)
 - Windows 10/11
+
+## 권장 모델
+
+| 도구 | 권장 모델 |
+|------|----------|
+| Codex | **GPT-4.1 / GPT-5.5 이상** |
+| Claude Code | Claude Sonnet 4.5 이상 |
+
+> 경우의 수 추론, 이미지 기반 좌표 분석 등 복잡한 쌓기나무 작업에는 **GPT-5.5** 사용을 권장합니다.
