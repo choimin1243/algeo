@@ -13,13 +13,117 @@ Block coordinate convention:
 """
 
 import argparse
+import importlib.util
 import json
+import socket
+import subprocess
 import sys
 import time
 import traceback
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+
+class SetupStatusWindow:
+    def __init__(self):
+        self.root = None
+        self.label = None
+        self.was_shown = False
+
+    def show(self, message):
+        if self.root is None:
+            try:
+                import tkinter as tk
+            except Exception:
+                return
+            self.root = tk.Tk()
+            self.root.title("AlgeoMath setup")
+            self.root.geometry("440x150")
+            self.root.resizable(False, False)
+            self.root.attributes("-topmost", True)
+            self.label = tk.Label(
+                self.root,
+                text=message,
+                font=("Malgun Gothic", 12),
+                padx=24,
+                pady=28,
+                wraplength=380,
+                justify="center",
+            )
+            self.label.pack(expand=True, fill="both")
+        else:
+            self.label.config(text=message)
+        self.was_shown = True
+        self.root.update_idletasks()
+        self.root.update()
+
+    def close(self):
+        if self.root is not None:
+            try:
+                self.root.destroy()
+            except Exception:
+                pass
+            self.root = None
+            self.label = None
+
+
+def default_setup_log_path():
+    return Path.home() / ".codex" / "tmp" / "algeomath-stackblocks-setup.log"
+
+
+def write_setup_log(message, log_path=None):
+    line = f"{time.strftime('%Y-%m-%d %H:%M:%S')} {message}"
+    print(line, flush=True)
+    path = Path(log_path) if log_path else default_setup_log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def ensure_playwright(log_path=None, show_window=True):
+    """Install Playwright and Chromium on first use when they are missing."""
+    status_window = SetupStatusWindow() if show_window else None
+    setup_ok = False
+    write_setup_log("checking dependency: playwright", log_path)
+    try:
+        if importlib.util.find_spec("playwright") is None:
+            if status_window:
+                status_window.show("필요 라이브러리를 설치합니다.\n잠시 기다려 주세요.")
+            write_setup_log("installing dependency: playwright", log_path)
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
+        try:
+            from playwright.sync_api import sync_playwright as imported_sync_playwright
+        except ImportError:
+            if status_window:
+                status_window.show("필요 라이브러리를 설치합니다.\n잠시 기다려 주세요.")
+            write_setup_log("installing dependency: playwright", log_path)
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
+            from playwright.sync_api import sync_playwright as imported_sync_playwright
+
+        write_setup_log("checking browser: playwright chromium", log_path)
+        with imported_sync_playwright() as p:
+            executable = Path(p.chromium.executable_path)
+        if not executable.exists():
+            if status_window:
+                status_window.show("AlgeoMath 자동 배치용 브라우저를 설치합니다.\n처음 한 번만 오래 걸릴 수 있습니다.")
+            write_setup_log("installing browser: playwright chromium", log_path)
+            subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
+        write_setup_log("dependency check complete", log_path)
+        setup_ok = True
+        return imported_sync_playwright
+    except Exception:
+        if status_window and status_window.was_shown:
+            status_window.show("설치 중 오류가 발생했습니다.\n잠시 후 오류 내용을 확인해 주세요.")
+            time.sleep(5)
+        raise
+    finally:
+        if status_window:
+            if setup_ok and status_window.was_shown:
+                status_window.show("설치가 완료되었습니다.\nAlgeoMath를 여는 중입니다.")
+                time.sleep(2)
+            status_window.close()
+
+
+sync_playwright = None
 
 
 DEFAULT_COLORS = {1: 0xD89A52, 2: 0xD8893C, 3: 0xC9792F, 4: 0xB96828, 5: 0xA95A20}
@@ -324,7 +428,55 @@ def find_poly_frame(page):
     raise RuntimeError("AlgeomathPoly API frame not found")
 
 
+def wait_for_cdp(port, timeout=20):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=1):
+                return
+        except OSError:
+            time.sleep(0.25)
+    raise RuntimeError(f"Chromium CDP port did not open: {port}")
+
+
+def find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def launch_detached_chromium(playwright, port=None):
+    """Launch Chromium independently so the browser can stay open after injection."""
+    port = port or find_free_port()
+    user_data_dir = Path.home() / ".codex" / "tmp" / f"algeomath-stackblocks-profile-{port}"
+    user_data_dir.mkdir(parents=True, exist_ok=True)
+    executable = playwright.chromium.executable_path
+    creationflags = 0
+    if sys.platform.startswith("win"):
+        creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    proc = subprocess.Popen(
+        [
+            executable,
+            f"--remote-debugging-port={port}",
+            f"--user-data-dir={user_data_dir}",
+            "--no-first-run",
+            "--start-maximized",
+            "about:blank",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
+        creationflags=creationflags,
+    )
+    wait_for_cdp(port)
+    return proc, port
+
+
 def inject(height_map=None, blocks=None, cases=None, gap=3, screenshot=None, log_path=None, keep_open=True):
+    global sync_playwright
+    if sync_playwright is None:
+        sync_playwright = ensure_playwright(log_path)
+
     log_file = Path(log_path) if log_path else None
 
     def log(message):
@@ -352,9 +504,11 @@ def inject(height_map=None, blocks=None, cases=None, gap=3, screenshot=None, log
         log_detail += f" coordinates={json.dumps(describe_coordinates(height_map), ensure_ascii=False)}"
 
     p = sync_playwright().start()
-    browser = p.chromium.launch(headless=False, args=["--start-maximized"])
+    browser_proc, cdp_port = launch_detached_chromium(p)
+    browser = p.chromium.connect_over_cdp(f"http://127.0.0.1:{cdp_port}")
     try:
-        page = browser.new_page()
+        context = browser.contexts[0] if browser.contexts else browser.new_context()
+        page = context.new_page()
         page.set_viewport_size({"width": 1400, "height": 900})
         page.goto(
             "https://www.algeomath.kr/kids/algeomath/poly/make",
@@ -376,13 +530,15 @@ def inject(height_map=None, blocks=None, cases=None, gap=3, screenshot=None, log
         log(log_detail)
         if screenshot:
             log(f"screenshot={screenshot}")
-
-        while keep_open:
-            time.sleep(60)
     finally:
         if not keep_open:
             browser.close()
-            p.stop()
+            browser_proc.terminate()
+        else:
+            disconnect = getattr(browser, "disconnect", None)
+            if disconnect:
+                disconnect()
+        p.stop()
 
 
 def main():
@@ -415,7 +571,9 @@ def main():
     )
     parser.add_argument("--screenshot", help="Optional screenshot path.")
     parser.add_argument("--log", help="Optional log path.")
+    parser.add_argument("--reset", action="store_true", help="Accepted for compatibility; the scene is replaced on load.")
     parser.add_argument("--close", action="store_true", help="Close browser after injection.")
+    parser.add_argument("--setup-only", action="store_true", help="Check/install dependencies and exit without opening AlgeoMath.")
     parser.add_argument(
         "--print-coordinates",
         action="store_true",
@@ -424,6 +582,10 @@ def main():
     args = parser.parse_args()
 
     try:
+        if args.setup_only:
+            ensure_playwright(args.log)
+            return
+
         if args.cases:
             cases = parse_cases(args.cases)
             if args.print_coordinates:

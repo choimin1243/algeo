@@ -4,6 +4,10 @@ This skill controls AlgeoMath Kids directly in the browser using Playwright.
 
 ## When to use this skill
 
+- If the user says "쌓기나무", always use the AlgeoMath stack-block workflow in this skill.
+- Treat "쌓기나무" as equivalent to 3D stack blocks: coordinate inference, top/front/side view interpretation, cube layer counts, and AlgeoMath 3D block placement.
+- For any "쌓기나무" request, read `references/stackblocks-coordinate.md` first, and read `references/execution.md` when running the browser injection script.
+
 - **3D stack blocks** (쌓기나무): cubes, layers, top/front/side views, image-based block placement
 - **2D shapes** (도형): points, lines, triangles, circles, polygons, coordinate-plane drawings
 
