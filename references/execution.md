@@ -11,7 +11,15 @@ Preferred flow: compute stack-block coordinates, inject them into AlgeoMath, and
 For a teacher or first-time user, run the setup script once. It installs Playwright and the Chromium browser used by the automatic AlgeoMath placement script. It is safe to run again because already-installed items are skipped.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "C:\Users\choi2\.codex\skills\algeomath-skills\setup_algeomath.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.codex\skills\algeo\setup_algeomath.ps1"
+```
+
+## Required Dependency Check
+
+Before browser injection, confirm both dependencies. This command installs only missing items and skips anything already present.
+
+```powershell
+python "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" --setup-only
 ```
 
 Do not pass `--close` during normal stack-block work. The harness keeps the browser open by default.
@@ -19,21 +27,21 @@ Do not pass `--close` during normal stack-block work. The harness keeps the brow
 Inject explicit block coordinates:
 
 ```powershell
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --blocks '[[x,y,z], ...]'
 ```
 
 Inject custom height map:
 
 ```powershell
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --height-map '[[x,y,h], ...]'
 ```
 
 Show every possible case separated in one scene:
 
 ```powershell
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --cases '[[[x,y,h], ...], [[x,y,h], ...]]' `
   --gap 4
 ```
@@ -41,7 +49,7 @@ pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harne
 Inject preset:
 
 ```powershell
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --preset reference-pyramid
 ```
 

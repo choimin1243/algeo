@@ -2,6 +2,19 @@
 
 This skill controls AlgeoMath Kids directly in the browser using Playwright.
 
+## Mandatory post-install setup
+
+- After installing this skill from `github.com/choimin1243/algeo`, always run the setup script once:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.codex\skills\algeo\setup_algeomath.ps1"
+```
+
+- The setup checks the Python `playwright` package and the Playwright Chromium browser before installing anything.
+- If both are already installed, the setup skips them.
+- Do not stop dependency checks at `python`, `git`, or `gh`; AlgeoMath browser automation is not ready until both Playwright and Chromium are confirmed.
+- If this post-install step is missed, `scripts/stackblocks_harness.py` must still auto-check and install missing Playwright/Chromium dependencies on first browser injection.
+
 ## When to use this skill
 
 - If the user says "쌓기나무", always use the AlgeoMath stack-block workflow in this skill.
@@ -14,7 +27,7 @@ This skill controls AlgeoMath Kids directly in the browser using Playwright.
 ## Stack Blocks — Site Access and Injection
 
 **Target site:** https://www.algeomath.kr/kids/algeomath/poly/make  
-**Harness script:** `C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py`
+**Harness script:** `$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py`
 
 ### Step 1 — Determine coordinates
 
@@ -35,7 +48,7 @@ Before injecting any blocks, always reset the AlgeoMath scene to clear existing 
 
 ```powershell
 $env:PYTHONUTF8 = "1"
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --cases '[ [[x,y,h],...], [[x,y,h],...], [[x,y,h],...] ]' `
   --gap 2 `
   --screenshot "$env:TEMP\algeomath_stack.png" `
@@ -47,7 +60,7 @@ pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harne
 Explicit block list (most accurate):
 ```powershell
 $env:PYTHONUTF8 = "1"
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --blocks '[[x,y,z], ...]' `
   --screenshot "$env:TEMP\algeomath_stack.png" `
   --log "$env:TEMP\algeomath_stack.log"
@@ -56,7 +69,7 @@ pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harne
 Height map (when heights are given per column):
 ```powershell
 $env:PYTHONUTF8 = "1"
-pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+pythonw "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --height-map '[[x,y,h], ...]' `
   --screenshot "$env:TEMP\algeomath_stack.png" `
   --log "$env:TEMP\algeomath_stack.log"
@@ -64,7 +77,7 @@ pythonw "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harne
 
 Coordinate check (dry run, no browser):
 ```powershell
-python "C:\Users\choi2\.codex\skills\algeomath-skills\scripts\stackblocks_harness.py" `
+python "$env:USERPROFILE\.codex\skills\algeo\scripts\stackblocks_harness.py" `
   --blocks '[[x,y,z], ...]' --print-coordinates
 ```
 
@@ -75,7 +88,7 @@ After injection, check the log for `blocks`, `views`, `screenshot` entries.
 ## 2D Shapes — Site Access
 
 **Target site:** https://www.algeomath.kr/kids/algeomath/app/make  
-**Script:** `C:\Users\choi2\.codex\skills\algeomath-skills\scripts\algeo2d.py`
+**Script:** `$env:USERPROFILE\.codex\skills\algeo\scripts\algeo2d.py`
 
 See `algeo2d.md` for full usage.
 

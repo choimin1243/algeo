@@ -12,7 +12,21 @@ Route AlgeoMath Kids work while keeping the default context small.
 - 3D stack blocks, cubes, layer counts, or image-based block placement: read `references/stackblocks-coordinate.md`.
 - Running scripts or browser injection: read `references/execution.md`.
 - 2D points, lines, polygons, or coordinate-plane drawings: read `algeo2d.md`.
+- Immediately after installing this skill from GitHub, run `setup_algeomath.ps1` once so Playwright and Chromium are installed before the first lesson or demo.
 - For beginner/teacher setup, use `setup_algeomath.ps1` from `references/execution.md` before automatic browser placement.
+
+## Required Post-Install Setup
+
+- This skill requires both the Python `playwright` package and the Playwright-managed Chromium browser.
+- After GitHub skill installation, always run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.codex\skills\algeo\setup_algeomath.ps1"
+```
+
+- The setup script checks `playwright` and Chromium first. If they are already installed, it skips them.
+- Do not treat `python`, `git`, or `gh` as the complete dependency check; browser automation is not ready until Playwright and Chromium are confirmed.
+- If post-install setup was missed, `scripts/stackblocks_harness.py` also runs the same check automatically on first browser injection.
 
 ## Stack-Block Core
 
